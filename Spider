@@ -1,0 +1,29 @@
+import scrapy
+from scrapy import Selector
+from scrapy import Request
+import urllib
+
+
+class NgaSpider(scrapy.Spider):
+    name = "NgaSpider"
+    host = "http://www.ccguitar.cn"
+    start_urls = ["http://www.ccguitar.cn/pu_list_0_%d_0_5_8.htm" % d for d in range(1,100)]
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield Request(url=url,callback=self.parse_page)
+
+    def parse_page(self, response):
+        selector = Selector(response)
+        content_list = selector.xpath("//*[@target='_blank']")
+        for content in content_list:
+            url = content.xpath('@href').extract_first()
+            yield Request(url=url,callback=self.parse_blank)
+
+    def parse_blank(self, response):
+        selector = Selector(response)
+        content_list = selector.xpath("//div[@class='swiper-slide']/img")
+        for content in content_list:
+            url = self.host + content.xpath('@src').extract_first()
+            name = content.xpath('@alt').extract_first()+".jpg"
+            urllib.urlretrieve(url,name)
